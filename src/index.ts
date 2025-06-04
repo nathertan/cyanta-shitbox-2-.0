@@ -1,39 +1,54 @@
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, Interaction, Message } from 'discord.js';
+import { Client, GatewayIntentBits, Interaction, Message, SlashCommandAssertions } from 'discord.js';
 import * as dotenv from 'dotenv';
+import path from 'path';
+import { loadFiles } from './utils/loadCommands';
+import { SlashCommand, PrefixCommand } from './types/Command';
 
 dotenv.config();
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent],
 });
 
-const PREFIX = '!';
+const PREFIX = 'c!';
 
+const slashCommands = loadFiles<SlashCommand>(path.join(__dirname, 'commands', 'slash'));
+const PrefixCommand = loadFiles<PrefixCommand>(path.join(__dirname, 'commands', 'prefix'));
 
 client.once('ready', () => {
     console.log(`Logged in as ${client.user?.tag}`);
-})
+    setTimeout(() => {
+        console.log(`Bot Ready! Websocket ping to servers is ${client.ws.ping}ms`);
+    }, 5000);
+});
 
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (!interaction.isChatInputCommand()) return;
-
-    if (interaction.commandName === 'ping') {
-        await interaction.reply('Ong kontol');
+    const command = slashCommands.get(interaction.commandName);
+    if (!command) return;
+    try {
+        await command.execute(interaction);
+    } catch (err) {
+        console.error(err);
+        await interaction.reply({ content: 'Error executing command', ephemeral: true });
     }
 });
 
-client.on('messageCreate', (message: Message) => {
-    if (message.author.bot) return;
-
-    if (!message.content.startsWith(PREFIX)) return;
-
+client.on('messageCreate', async (message: Message) => {
+    if (message.author.bot || !message.content.startsWith(PREFIX)) return;
     const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
-    const command = args.shift()?.toLowerCase();
-
-    if (command === 'ping') {
-        message.reply('test');
+    const name = args.shift()?.toLowerCase();
+    const command = PrefixCommand.get(name!);
+    if (!command) return;
+    try {
+        await command.execute(message, args);
+    } catch (err) {
+        console.error(err);
+        await message.reply('Error executing command.');
     }
-})
-
+});
 
 client.login(process.env.BOT_TOKEN);
