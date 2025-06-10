@@ -4,7 +4,7 @@ import { PrefixCommand } from "../../types/Command";
 const command: PrefixCommand = {
     name: 'jova',
     async execute(message: Message, args: string[]) {
-        const userId = "666604533329297408"; // replace this with the actual Discord user ID
+        const userId = "666604533329297408";
         if (!message.guild) {
             await message.reply("This command only works on servers.");
             return;
