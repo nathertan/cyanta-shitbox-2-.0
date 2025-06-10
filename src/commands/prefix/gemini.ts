@@ -6,6 +6,24 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+function chunkSplit(text: string, maxLength = 2000): string[] {
+    const chunks: string[] = [];
+    let remaining = text;
+
+    while (remaining.length > maxLength) {
+        let splitIndex = remaining.lastIndexOf("\n\n", maxLength);
+        if (splitIndex === -1) splitIndex = remaining.lastIndexOf(". ", maxLength);
+        if (splitIndex === -1) splitIndex = maxLength;
+
+        const chunk = remaining.slice(0, splitIndex + 1).trim();
+        chunks.push(chunk);
+        remaining = remaining.slice(splitIndex + 1).trim();
+    }
+
+    if (remaining.length > 0) chunks.push(remaining);
+    return chunks;
+}
+
 const command: PrefixCommand = {
     name: 'ai',
     async execute(message: Message, args: string[]) {
@@ -13,11 +31,19 @@ const command: PrefixCommand = {
 
             const response = await ai.models.generateContent({
                 model: "gemini-2.0-flash",
-                contents: "what are you? what is your model name?"
-            })
-            // @ts-expect-error
-            const sent = await message.channel.send(response.text);
-            console.log(response.text);
+                contents: args.join(" ")
+            });
+
+            // const fullText = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+
+            const chunks = chunkSplit(response.text || "No response.");
+
+            for (const chunk of chunks) {
+                //@ts-expect-error
+                await message.channel.send(chunk);
+            }
+
+            // console.log(response.text);
         }
     },
 };
