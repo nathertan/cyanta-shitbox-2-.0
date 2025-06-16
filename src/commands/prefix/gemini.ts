@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { PrefixCommand } from "../../types/Command";
 import { GoogleGenAI } from "@google/genai";
 import * as dotenv from 'dotenv';
+import { defaultPrompt } from "../../utils/prompts";
 
 dotenv.config();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -29,9 +30,11 @@ const command: PrefixCommand = {
     async execute(message: Message, args: string[]) {
         if (message.channel?.isTextBased()) {
 
+            const Message = args.join(" ");
+            const prompt = defaultPrompt(Message);
             const response = await ai.models.generateContent({
                 model: "gemini-2.0-flash",
-                contents: args.join(" ")
+                contents: prompt,
             });
 
             // const fullText = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
