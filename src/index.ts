@@ -51,4 +51,14 @@ client.on('messageCreate', async (message: Message) => {
     }
 });
 
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    if (message.channel.isThread() && message.channel.name.includes('bot-chat-with')) {
+        const thread = message.channel;
+
+        await thread.send("${message.content}");
+    }
+})
+
 client.login(process.env.BOT_TOKEN);
