@@ -28,7 +28,7 @@ const command: SlashCommand = {
         });
 
         await thread.send(
-            `Hello <@#{interaction.user.id}>! This is a thread for private chat.`
+            `Hello <@${interaction.user.id}>! This is a thread for private chat.`
         );
     },
 };

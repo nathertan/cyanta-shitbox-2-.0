@@ -57,7 +57,7 @@ client.on('messageCreate', async (message) => {
     if (message.channel.isThread() && message.channel.name.includes('bot-chat-with')) {
         const thread = message.channel;
 
-        await thread.send("${message.content}");
+        await thread.send(`${message.content}`);
     }
 })
 
