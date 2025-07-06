@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import path from 'path';
 import { loadFiles } from './utils/loadCommands';
 import { SlashCommand, PrefixCommand } from './types/Command';
+import gemini from './utils/gemini';
 
 dotenv.config();
 
@@ -56,8 +57,10 @@ client.on('messageCreate', async (message) => {
 
     if (message.channel.isThread() && message.channel.name.includes('bot-chat-with')) {
         const thread = message.channel;
-
-        await thread.send(`${message.content}`);
+        const geminiResponse = await gemini.execute(message.content);
+        for (const response of geminiResponse) {
+            await message.channel.send(response);
+        }
     }
 })
 
