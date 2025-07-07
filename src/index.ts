@@ -1,9 +1,10 @@
-import { Client, GatewayIntentBits, Interaction, Message, SlashCommandAssertions } from 'discord.js';
+import { Client, GatewayIntentBits, Interaction, Message, ThreadChannel } from 'discord.js';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { loadFiles } from './utils/loadCommands';
 import { SlashCommand, PrefixCommand } from './types/Command';
-import gemini from './utils/gemini';
+import { geminiThread } from './utils/gemini';
+import { getHistory } from './commands/slash/thread-ai';
 
 dotenv.config();
 
@@ -56,8 +57,32 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     if (message.channel.isThread() && message.channel.name.includes('bot-chat-with')) {
-        const thread = message.channel;
-        const geminiResponse = await gemini.execute(message.content);
+        const currentThread = message.channel as ThreadChannel;
+        const chatHistory = await getHistory(message.channel);
+        const lastMessage = message.content;
+
+        if (chatHistory.length === 0) {
+            chatHistory.unshift({
+                role: 'user',
+                parts: [{ text: `You are Cyanta, a helpful Discord bot with a witty personality, but still respectful, like a brother. Your job is to answer questions and chat in a friendly, concise way. Also tone down the parentheses and dont be cringe ` }]
+            });
+        }
+
+        chatHistory.push({
+            role: "user",
+            parts: [{ text: lastMessage }],
+        });
+
+        // --- DEBUGGING LOG ---
+        console.log("--- Conversation Context being sent to Gemini ---");
+        console.log(JSON.stringify(chatHistory, null, 2)); // Pretty-print the array
+        console.log("-------------------------------------------------");
+        // --- END DEBUGGING LOG ---
+
+
+        await currentThread.sendTyping();
+
+        const geminiResponse = await geminiThread(chatHistory);
         for (const response of geminiResponse) {
             await message.channel.send(response);
         }

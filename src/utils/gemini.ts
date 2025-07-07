@@ -1,9 +1,10 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Content } from "@google/genai";
 import * as dotenv from 'dotenv';
 import { defaultPrompt } from "./prompts";
 
 dotenv.config();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+type GeminiChatHistory = Array<Content>;
 
 function chunkSplit(response: string, maxLength = 2000): string[] {
     const outputChunks: string[] = [];
@@ -40,16 +41,21 @@ function chunkSplit(response: string, maxLength = 2000): string[] {
     return outputChunks;
 }
 
+export async function geminiPrefix(args: string) {
+    const prompt = defaultPrompt(args);
+    const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+    });
+    const splittedText = chunkSplit(response.text || "No response.");
+    return splittedText;
+}
 
-export default {
-    async execute(args: string) {
-        const prompt = defaultPrompt(args);
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
-        });
-        const splittedText = chunkSplit(response.text || "No response.")
-        // console.log("AAAAAAAAAAAA", splittedText);
-        return splittedText;
-    }
+export async function geminiThread(chatHistory: GeminiChatHistory): Promise<string[]> {
+    const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: chatHistory,
+    });
+    const splittedText = chunkSplit(response.text || "No Response.");
+    return splittedText;
 }

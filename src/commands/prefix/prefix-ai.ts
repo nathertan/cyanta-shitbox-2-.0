@@ -1,7 +1,7 @@
 import { Message, TextChannel } from "discord.js";
 import { PrefixCommand } from "../../types/Command";
 import * as dotenv from 'dotenv';
-import gemini from "../../utils/gemini";
+import { geminiPrefix } from "../../utils/gemini";
 
 dotenv.config();
 const command: PrefixCommand = {
@@ -10,7 +10,7 @@ const command: PrefixCommand = {
         if (message.channel?.isTextBased()) {
 
             const input = args.join(" ");
-            const geminiResponse = await gemini.execute(input);
+            const geminiResponse = await geminiPrefix(input);
 
             for (const response of geminiResponse) {
                 await (message.channel as TextChannel).send(response);
